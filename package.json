@@ -13,6 +13,7 @@
   "dependencies": {
     "@imagekit/nodejs": "^7.12.1",
     "@types/nodemailer": "^8.0.2",
+    "@types/sharp": "^0.31.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -22,7 +23,8 @@
     "mongoose": "^8.3.1",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^10.0.13",
-    "pdfkit": "^0.15.0"
+    "pdfkit": "^0.15.0",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

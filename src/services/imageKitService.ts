@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import ImageKit from 'imagekit';
 import { config } from '../config/env';
+import { compressImage } from './imageCompressor';
 
 export interface ImageKitUploadResult {
   fileId: string;
@@ -28,19 +29,22 @@ const getImageKit = (): ImageKit | null => {
 
 /**
  * Uploads an image file to ImageKit securely from the backend.
- * Uses official ImageKit SDK supporting any file size.
+ * Automatically compresses images to ~100-200 KB before saving or uploading.
  */
 export const uploadToImageKit = async (
   fileBuffer: Buffer,
   fileName: string,
   folder: string = '/site_images'
 ): Promise<ImageKitUploadResult> => {
+  // Compress image to 100-200 KB target range
+  const compressedBuffer = await compressImage(fileBuffer, { maxKB: 200 });
+
   const ik = getImageKit();
 
   if (ik) {
     try {
       const response = await ik.upload({
-        file: fileBuffer,
+        file: compressedBuffer,
         fileName: fileName || `site_photo_${Date.now()}.jpg`,
         folder: folder || '/site_images',
         useUniqueFileName: true
@@ -69,7 +73,7 @@ export const uploadToImageKit = async (
   const safeExt = hasExt ? path.extname(fileName) : '.jpg';
   const safeName = `${Date.now()}_${cleanName || 'site_photo'}${safeExt}`;
   const filePath = path.join(siteDir, safeName);
-  fs.writeFileSync(filePath, fileBuffer);
+  fs.writeFileSync(filePath, compressedBuffer);
 
   const localUrl = `/uploads/site-images/${safeName}`;
   return {

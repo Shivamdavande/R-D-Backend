@@ -237,7 +237,17 @@ export const updateExpense = async (req: AuthRequest, res: Response) => {
     if (billImageUrl !== undefined) expense.billImageUrl = billImageUrl;
 
     if (req.file) {
-      expense.billImageUrl = `/uploads/${req.file.filename}`;
+      try {
+        const fileBuffer = req.file.buffer || (req.file.path ? require('fs').readFileSync(req.file.path) : null);
+        if (fileBuffer) {
+          const ikRes = await uploadToImageKit(fileBuffer, req.file.originalname || `bill_${Date.now()}.jpg`, `/sites/${expense.siteId}/bills`);
+          expense.billImageUrl = ikRes.url;
+        } else {
+          expense.billImageUrl = `/uploads/${req.file.filename}`;
+        }
+      } catch (ikErr) {
+        expense.billImageUrl = `/uploads/${req.file.filename}`;
+      }
     }
 
     if (quantity !== undefined || rate !== undefined) {
