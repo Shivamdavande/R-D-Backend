@@ -6,7 +6,7 @@ import { User, IUser } from '../models/User';
 export interface AuthRequest extends Request {
   user?: IUser;
   token?: string;
-  siteRole?: 'OWNER' | 'SUPERVISOR' | 'VIEWER';
+  siteRole?: 'OWNER' | 'SUPERVISOR' | 'SUPERWISER' | 'VIEWER';
 }
 
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {

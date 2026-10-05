@@ -2,8 +2,11 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { Site } from '../models/Site';
 import { Expense } from '../models/Expense';
+import { SiteMember } from '../models/SiteMember';
+import { User } from '../models/User';
 import { generateSitePDFReport } from '../services/pdfService';
 import { generateExpensesCSV } from '../services/csvService';
+import { sendDailySiteReportEmail } from '../services/emailService';
 import mongoose from 'mongoose';
 import { config } from '../config/env';
 
@@ -156,5 +159,80 @@ export const exportSiteCSV = async (req: AuthRequest, res: Response) => {
     return res.send(csvContent);
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message || 'Failed to export CSV.' });
+  }
+};
+
+import { processSingleSiteDailyReport, processAllDailySiteReportsBatch } from '../services/dailyReportCronService';
+
+/**
+ * Sends a Daily Site Activity Report email to the site owner for items added today.
+ * IF NO ITEMS WERE ADDED TODAY, THE REPORT IS SKIPPED (NO EMAIL SENT).
+ */
+export const sendDailySiteReport = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'OWNER') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Daily site reports are exclusively available to the Owner.'
+      });
+    }
+
+    const siteId = req.params.id || req.body.siteId;
+
+    if (!siteId) {
+      return res.status(400).json({ success: false, message: 'Site ID is required.' });
+    }
+
+    const result = await processSingleSiteDailyReport(siteId, req.user?._id);
+
+    if (!result.success && !result.reportSent && result.message.includes('not found')) {
+      return res.status(404).json({ success: false, message: result.message });
+    }
+
+    if (!result.success) {
+      return res.status(500).json({ success: false, message: result.message });
+    }
+
+    return res.status(200).json({
+      success: true,
+      reportSent: result.reportSent,
+      itemCount: result.itemCount,
+      totalAmountToday: result.totalAmountToday || 0,
+      ownerEmail: result.ownerEmail,
+      message: result.message
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || 'Failed to send daily site report.' });
+  }
+};
+
+/**
+ * Triggers automated daily reports for ALL active sites.
+ * Only sends emails for sites that had items added today.
+ */
+export const triggerAllDailySiteReports = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'OWNER') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Daily site reports batch trigger is exclusively available to the Owner.'
+      });
+    }
+
+    const result = await processAllDailySiteReportsBatch(req.user?._id);
+
+    if (!result.success) {
+      return res.status(500).json({ success: false, message: result.message });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      reportsSent: result.reportsSent,
+      skippedSites: result.skippedSites,
+      totalActiveSites: result.totalActiveSites
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || 'Failed to trigger daily reports batch.' });
   }
 };

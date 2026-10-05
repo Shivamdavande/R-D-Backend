@@ -4,6 +4,7 @@ import {
   getSites,
   getSiteById,
   updateSite,
+  deleteSite,
   closeSite,
   reopenSite,
   addCollaborator,
@@ -13,6 +14,7 @@ import {
 import { getSiteExpenses, addExpense } from '../controllers/expenseController';
 import { getSiteSummary, getItemWiseSummary, getMeasurementBook } from '../controllers/summaryController';
 import { getSiteActivityLog } from '../controllers/activityController';
+import { sendDailySiteReport } from '../controllers/reportController';
 import { authenticate } from '../middleware/auth';
 import { requireRole } from '../middleware/role';
 import { requireSiteAccess, requireSiteOwner, requireActiveSite } from '../middleware/siteAuth';
@@ -33,9 +35,10 @@ router.use(authenticate);
 router.get('/', getSites);
 router.post('/', requireRole('OWNER'), createSite);
 
-// Single Site Details, Update
+// Single Site Details, Update, Delete (Owner Only)
 router.get('/:id', requireSiteAccess, getSiteById);
 router.put('/:id', requireSiteAccess, requireSiteOwner, updateSite);
+router.delete('/:id', requireSiteAccess, requireSiteOwner, deleteSite);
 
 // Collaborators
 router.get('/:id/members', requireSiteAccess, getSiteMembers);
@@ -61,5 +64,6 @@ router.get('/:id/summary', requireSiteAccess, getSiteSummary);
 router.get('/:id/item-summary', requireSiteAccess, getItemWiseSummary);
 router.get('/:id/measurement-book', requireSiteAccess, getMeasurementBook);
 router.get('/:id/activity', requireSiteAccess, getSiteActivityLog);
+router.post('/:id/daily-report', requireSiteAccess, sendDailySiteReport);
 
 export default router;

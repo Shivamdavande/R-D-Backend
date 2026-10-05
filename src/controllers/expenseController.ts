@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { Expense } from '../models/Expense';
 import { Site } from '../models/Site';
+import { SiteMember } from '../models/SiteMember';
 import { ActivityLog } from '../models/ActivityLog';
 import { uploadToImageKit } from '../services/imageKitService';
 
@@ -188,6 +189,14 @@ export const getExpenseById = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const getCreatorIdString = (createdByField: any): string => {
+  if (!createdByField) return '';
+  if (typeof createdByField === 'object' && createdByField._id) {
+    return createdByField._id.toString();
+  }
+  return createdByField.toString();
+};
+
 export const updateExpense = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -197,11 +206,13 @@ export const updateExpense = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: 'Expense not found.' });
     }
 
-    // Permission check for Supervisor: supervisors can edit their own entries
-    if (req.user!.role !== 'OWNER' && expense.createdBy.toString() !== req.user!._id.toString()) {
+    const userRole = (req.user?.role || '').toUpperCase();
+
+    // Permission check: OWNER, SUPERVISOR, or SUPERWISER can edit expenses
+    if (userRole !== 'OWNER' && userRole !== 'SUPERVISOR' && userRole !== 'SUPERWISER') {
       return res.status(403).json({
         success: false,
-        message: 'You can only edit expenses that you created.'
+        message: 'Only an Owner or Supervisor can edit expenses.'
       });
     }
 
@@ -296,11 +307,13 @@ export const deleteExpense = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: 'Expense not found.' });
     }
 
-    // Only OWNER or creator can delete
-    if (req.user!.role !== 'OWNER' && expense.createdBy.toString() !== req.user!._id.toString()) {
+    const userRole = (req.user?.role || '').toUpperCase();
+
+    // Permission check for deleting item: OWNER, SUPERVISOR, or SUPERWISER can delete
+    if (userRole !== 'OWNER' && userRole !== 'SUPERVISOR' && userRole !== 'SUPERWISER') {
       return res.status(403).json({
         success: false,
-        message: 'Only the Owner or creator can delete an expense entry.'
+        message: 'Only the Owner or Supervisor can delete an expense entry.'
       });
     }
 
@@ -313,7 +326,7 @@ export const deleteExpense = async (req: AuthRequest, res: Response) => {
       userId: req.user!._id,
       userName: req.user!.name,
       action: 'EXPENSE_DELETED',
-      details: `${req.user!.name} deleted expense: ${expense.quantity} ${expense.unit} ${expense.itemName} (₹${expense.amount.toLocaleString()})`,
+      details: `${req.user!.name} (${userRole}) deleted item expense: ${expense.quantity} ${expense.unit} ${expense.itemName} (₹${expense.amount.toLocaleString()})`,
       expenseId: expense._id,
       previousValues: {
         itemName: expense.itemName,

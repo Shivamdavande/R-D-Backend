@@ -77,42 +77,68 @@ export const createSite = async (req: AuthRequest, res: Response) => {
 export const getSites = async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user!;
+    const userRole = (user.role || '').toUpperCase();
     let sites;
 
-    if (user.role === 'OWNER') {
+    if (userRole === 'OWNER') {
       // Owner sees all sites
       sites = await Site.find().sort({ createdAt: -1 }).populate('createdBy', 'name email');
     } else {
-      // Supervisors ONLY see sites where Owner has explicitly assigned/added them
+      // Supervisors see sites they are assigned to OR sites created by them
       const memberships = await SiteMember.find({ userId: user._id });
       const siteIds = memberships.map(m => m.siteId);
       sites = await Site.find({
-        _id: { $in: siteIds }
+        $or: [{ _id: { $in: siteIds } }, { createdBy: user._id }]
       }).sort({ createdAt: -1 }).populate('createdBy', 'name email');
     }
 
-    // Attach total expenses & expense counts for dashboard cards
-    const sitesWithMetrics = await Promise.all(
-      sites.map(async (site) => {
-        const totalExpensesResult = await Expense.aggregate([
-          { $match: { siteId: site._id, isDeleted: false } },
-          { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
-        ]);
+    if (!sites || sites.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        sites: []
+      });
+    }
 
-        const totalExpenses = totalExpensesResult.length > 0 ? totalExpensesResult[0].total : 0;
-        const expenseCount = totalExpensesResult.length > 0 ? totalExpensesResult[0].count : 0;
-        const profit = site.contractValue > 0 ? site.contractValue - totalExpenses : 0;
-        const profitPercentage = site.contractValue > 0 ? Number(((profit / site.contractValue) * 100).toFixed(2)) : 0;
+    const allSiteIds = sites.map(s => s._id);
 
-        return {
-          ...site.toObject(),
-          totalExpenses,
-          expenseCount,
-          profit,
-          profitPercentage
+    // Optimized Single Aggregation Query for all sites
+    const expensesGrouped = await Expense.aggregate([
+      { $match: { siteId: { $in: allSiteIds }, isDeleted: false } },
+      {
+        $group: {
+          _id: '$siteId',
+          totalExpenses: { $sum: '$amount' },
+          expenseCount: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const expenseMap: Record<string, { totalExpenses: number; expenseCount: number }> = {};
+    expensesGrouped.forEach(item => {
+      if (item._id) {
+        expenseMap[item._id.toString()] = {
+          totalExpenses: item.totalExpenses || 0,
+          expenseCount: item.expenseCount || 0
         };
-      })
-    );
+      }
+    });
+
+    const sitesWithMetrics = sites.map((site) => {
+      const metrics = expenseMap[site._id.toString()] || { totalExpenses: 0, expenseCount: 0 };
+      const totalExpenses = metrics.totalExpenses;
+      const expenseCount = metrics.expenseCount;
+      const profit = site.contractValue > 0 ? site.contractValue - totalExpenses : 0;
+      const profitPercentage = site.contractValue > 0 ? Number(((profit / site.contractValue) * 100).toFixed(2)) : 0;
+
+      return {
+        ...site.toObject(),
+        totalExpenses,
+        expenseCount,
+        profit,
+        profitPercentage
+      };
+    });
 
     return res.status(200).json({
       success: true,
@@ -580,3 +606,36 @@ export const getSiteMembers = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ success: false, message: error.message || 'Failed to fetch site members.' });
   }
 };
+
+export const deleteSite = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const site = await Site.findById(id);
+
+    if (!site) {
+      return res.status(404).json({ success: false, message: 'Site not found.' });
+    }
+
+    if (req.user?.role !== 'OWNER') {
+      return res.status(403).json({
+        success: false,
+        message: 'Permission denied. Only the Owner can delete a construction site.'
+      });
+    }
+
+    // Cascade delete associated members, expenses, site images, and activity logs
+    await SiteMember.deleteMany({ siteId: id });
+    await Expense.deleteMany({ siteId: id });
+    await SiteImage.deleteMany({ siteId: id });
+    await ActivityLog.deleteMany({ siteId: id });
+    await Site.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      success: true,
+      message: `Site "${site.siteName}" deleted successfully.`
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || 'Failed to delete site.' });
+  }
+};
+

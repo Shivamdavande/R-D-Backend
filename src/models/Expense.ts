@@ -52,6 +52,9 @@ const expenseSchema = new Schema<IExpense>(
   { timestamps: true }
 );
 
+// Compound index for ultra-fast aggregation per site
+expenseSchema.index({ siteId: 1, isDeleted: 1 });
+
 // Middleware to calculate amount automatically before saving
 expenseSchema.pre('save', function (next) {
   if (this.quantity !== undefined && this.rate !== undefined) {

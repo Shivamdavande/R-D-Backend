@@ -1,7 +1,7 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-export type UserRole = 'OWNER' | 'SUPERVISOR' | 'VIEWER';
+export type UserRole = 'OWNER' | 'SUPERVISOR' | 'SUPERWISER' | 'VIEWER';
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
@@ -33,7 +33,7 @@ const userSchema = new Schema<IUser>(
     phone: { type: String, trim: true },
     role: { 
       type: String, 
-      enum: ['OWNER', 'SUPERVISOR', 'VIEWER'], 
+      enum: ['OWNER', 'SUPERVISOR', 'SUPERWISER', 'VIEWER'], 
       default: 'SUPERVISOR' 
     },
     companyName: { type: String, default: 'R&D CONSTRUCTIONS' },
