@@ -6,6 +6,14 @@ import mongoose from 'mongoose';
 
 export const getSiteSummary = async (req: AuthRequest, res: Response) => {
   try {
+    const userRole = (req.user?.role || '').toUpperCase();
+    if (userRole !== 'OWNER') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Final site reports and financial summaries are exclusively available to the Owner.'
+      });
+    }
+
     const { id } = req.params;
     if (!id || id === 'undefined' || id === 'null' || !mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ success: false, message: 'Valid Site ID is required.' });

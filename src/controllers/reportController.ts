@@ -12,6 +12,14 @@ import { config } from '../config/env';
 
 export const exportSitePDF = async (req: AuthRequest, res: Response) => {
   try {
+    const userRole = (req.user?.role || '').toUpperCase();
+    if (userRole !== 'OWNER') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Final P&L reports are exclusively available to the Owner.'
+      });
+    }
+
     const { id } = req.params;
     const site = await Site.findById(id).populate('createdBy', 'name email');
 
@@ -140,6 +148,14 @@ export const exportSitePDF = async (req: AuthRequest, res: Response) => {
 
 export const exportSiteCSV = async (req: AuthRequest, res: Response) => {
   try {
+    const userRole = (req.user?.role || '').toUpperCase();
+    if (userRole !== 'OWNER') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Final P&L reports are exclusively available to the Owner.'
+      });
+    }
+
     const { id } = req.params;
     const site = await Site.findById(id);
 
