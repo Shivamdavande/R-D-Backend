@@ -11,6 +11,7 @@ router.get('/site/:id/pdf', requireSiteAccess, exportSitePDF);
 router.get('/site/:id/excel', requireSiteAccess, exportSiteCSV);
 router.get('/site/:id/csv', requireSiteAccess, exportSiteCSV);
 router.post('/site/:id/daily-report', requireSiteAccess, sendDailySiteReport);
+router.post('/daily-report', sendDailySiteReport);
 router.post('/daily-batch', triggerAllDailySiteReports);
 
 export default router;

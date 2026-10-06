@@ -185,12 +185,12 @@ export const sendDailySiteReport = async (req: AuthRequest, res: Response) => {
 
     const result = await processSingleSiteDailyReport(siteId, req.user?._id);
 
-    if (!result.success && !result.reportSent && result.message.includes('not found')) {
+    if (!result.success && !result.reportSent && result.message === 'Site not found.') {
       return res.status(404).json({ success: false, message: result.message });
     }
 
     if (!result.success) {
-      return res.status(500).json({ success: false, message: result.message });
+      return res.status(400).json({ success: false, message: result.message });
     }
 
     return res.status(200).json({

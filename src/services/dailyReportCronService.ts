@@ -74,7 +74,15 @@ export const processSingleSiteDailyReport = async (
       }
     }
 
-    // Priority 3: Fallback to any active OWNER in the system
+    // Priority 3: Requesting user if available and has an email
+    if (!ownerUser && requestingUserId) {
+      const reqUser = await User.findById(requestingUserId);
+      if (reqUser && reqUser.email) {
+        ownerUser = reqUser;
+      }
+    }
+
+    // Priority 4: Fallback to any active OWNER in the system
     if (!ownerUser) {
       const systemOwner = await User.findOne({ role: 'OWNER', isActive: true });
       if (systemOwner && systemOwner.email) {

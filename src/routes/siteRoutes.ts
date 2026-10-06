@@ -65,5 +65,6 @@ router.get('/:id/item-summary', requireSiteAccess, getItemWiseSummary);
 router.get('/:id/measurement-book', requireSiteAccess, getMeasurementBook);
 router.get('/:id/activity', requireSiteAccess, getSiteActivityLog);
 router.post('/:id/daily-report', requireSiteAccess, sendDailySiteReport);
+router.post('/daily-report', sendDailySiteReport);
 
 export default router;
