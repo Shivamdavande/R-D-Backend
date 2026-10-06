@@ -94,3 +94,25 @@ export const deleteSiteBill = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ success: false, message: error.message || 'Failed to delete bill document.' });
   }
 };
+
+/**
+ * Download an Excel bill document with attachment headers and original filename
+ */
+export const downloadSiteBill = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, billId } = req.params;
+    const bill = await SiteBill.findOne({ _id: billId, siteId: id });
+    if (!bill) {
+      return res.status(404).json({ success: false, message: 'Bill document not found.' });
+    }
+
+    const filePath = path.join(__dirname, '../../', bill.fileUrl);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, message: 'Bill file not found on server.' });
+    }
+
+    return res.download(filePath, bill.originalName || 'Site_Bill.xlsx');
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || 'Failed to download bill file.' });
+  }
+};

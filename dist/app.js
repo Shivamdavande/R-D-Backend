@@ -24,14 +24,33 @@ app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../
     maxAge: '7d',
     immutable: true,
     setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.png')) {
+        const lower = filePath.toLowerCase();
+        if (lower.endsWith('.png')) {
             res.setHeader('Content-Type', 'image/png');
         }
-        else if (filePath.endsWith('.webp')) {
+        else if (lower.endsWith('.webp')) {
             res.setHeader('Content-Type', 'image/webp');
         }
-        else {
+        else if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
             res.setHeader('Content-Type', 'image/jpeg');
+        }
+        else if (lower.endsWith('.xlsx')) {
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        }
+        else if (lower.endsWith('.xls')) {
+            res.setHeader('Content-Type', 'application/vnd.ms-excel');
+        }
+        else if (lower.endsWith('.csv')) {
+            res.setHeader('Content-Type', 'text/csv');
+        }
+        else if (lower.endsWith('.pdf')) {
+            res.setHeader('Content-Type', 'application/pdf');
+        }
+        else if (lower.endsWith('.doc')) {
+            res.setHeader('Content-Type', 'application/msword');
+        }
+        else if (lower.endsWith('.docx')) {
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         }
         res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
     }

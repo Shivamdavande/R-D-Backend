@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteSiteBill = exports.getSiteBills = exports.uploadSiteBill = void 0;
+exports.downloadSiteBill = exports.deleteSiteBill = exports.getSiteBills = exports.uploadSiteBill = void 0;
 const SiteBill_1 = require("../models/SiteBill");
 const Site_1 = require("../models/Site");
 const path_1 = __importDefault(require("path"));
@@ -94,3 +94,24 @@ const deleteSiteBill = async (req, res) => {
     }
 };
 exports.deleteSiteBill = deleteSiteBill;
+/**
+ * Download an Excel bill document with attachment headers and original filename
+ */
+const downloadSiteBill = async (req, res) => {
+    try {
+        const { id, billId } = req.params;
+        const bill = await SiteBill_1.SiteBill.findOne({ _id: billId, siteId: id });
+        if (!bill) {
+            return res.status(404).json({ success: false, message: 'Bill document not found.' });
+        }
+        const filePath = path_1.default.join(__dirname, '../../', bill.fileUrl);
+        if (!fs_1.default.existsSync(filePath)) {
+            return res.status(404).json({ success: false, message: 'Bill file not found on server.' });
+        }
+        return res.download(filePath, bill.originalName || 'Site_Bill.xlsx');
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, message: error.message || 'Failed to download bill file.' });
+    }
+};
+exports.downloadSiteBill = downloadSiteBill;

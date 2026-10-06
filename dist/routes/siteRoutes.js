@@ -39,6 +39,7 @@ router.get('/:id/images/pdf', siteAuth_1.requireSiteAccess, siteImageController_
 // Site Excel Bills Sub-resource
 router.get('/:id/bills', siteAuth_1.requireSiteAccess, siteBillController_1.getSiteBills);
 router.post('/:id/bills', siteAuth_1.requireSiteAccess, siteAuth_1.requireSiteOwner, upload_1.uploadDocument.single('billFile'), siteBillController_1.uploadSiteBill);
+router.get('/:id/bills/:billId/download', siteAuth_1.requireSiteAccess, siteBillController_1.downloadSiteBill);
 router.delete('/:id/bills/:billId', siteAuth_1.requireSiteAccess, siteAuth_1.requireSiteOwner, siteBillController_1.deleteSiteBill);
 // Site Summaries & Aggregations
 router.get('/:id/summary', siteAuth_1.requireSiteAccess, summaryController_1.getSiteSummary);

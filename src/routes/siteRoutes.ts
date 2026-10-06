@@ -26,7 +26,7 @@ import {
   deleteSiteImage,
   getSiteImagesPDF
 } from '../controllers/siteImageController';
-import { uploadSiteBill, getSiteBills, deleteSiteBill } from '../controllers/siteBillController';
+import { uploadSiteBill, getSiteBills, deleteSiteBill, downloadSiteBill } from '../controllers/siteBillController';
 
 const router = Router();
 
@@ -63,6 +63,7 @@ router.get('/:id/images/pdf', requireSiteAccess, getSiteImagesPDF);
 // Site Excel Bills Sub-resource
 router.get('/:id/bills', requireSiteAccess, getSiteBills);
 router.post('/:id/bills', requireSiteAccess, requireSiteOwner, uploadDocument.single('billFile'), uploadSiteBill);
+router.get('/:id/bills/:billId/download', requireSiteAccess, downloadSiteBill);
 router.delete('/:id/bills/:billId', requireSiteAccess, requireSiteOwner, deleteSiteBill);
 
 // Site Summaries & Aggregations
