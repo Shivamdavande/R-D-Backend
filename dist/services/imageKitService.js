@@ -8,6 +8,7 @@ const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const imagekit_1 = __importDefault(require("imagekit"));
 const env_1 = require("../config/env");
+const imageCompressor_1 = require("./imageCompressor");
 let imagekitInstance = null;
 const getImageKit = () => {
     const { publicKey, privateKey, urlEndpoint } = env_1.config.imageKit;
@@ -25,14 +26,16 @@ const getImageKit = () => {
 };
 /**
  * Uploads an image file to ImageKit securely from the backend.
- * Uses official ImageKit SDK supporting any file size.
+ * Automatically compresses images to ~100-200 KB before saving or uploading.
  */
 const uploadToImageKit = async (fileBuffer, fileName, folder = '/site_images') => {
+    // Compress image to 100-200 KB target range
+    const compressedBuffer = await (0, imageCompressor_1.compressImage)(fileBuffer, { maxKB: 200 });
     const ik = getImageKit();
     if (ik) {
         try {
             const response = await ik.upload({
-                file: fileBuffer,
+                file: compressedBuffer,
                 fileName: fileName || `site_photo_${Date.now()}.jpg`,
                 folder: folder || '/site_images',
                 useUniqueFileName: true
@@ -59,7 +62,7 @@ const uploadToImageKit = async (fileBuffer, fileName, folder = '/site_images') =
     const safeExt = hasExt ? path_1.default.extname(fileName) : '.jpg';
     const safeName = `${Date.now()}_${cleanName || 'site_photo'}${safeExt}`;
     const filePath = path_1.default.join(siteDir, safeName);
-    fs_1.default.writeFileSync(filePath, fileBuffer);
+    fs_1.default.writeFileSync(filePath, compressedBuffer);
     const localUrl = `/uploads/site-images/${safeName}`;
     return {
         fileId: `local_${safeName}`,

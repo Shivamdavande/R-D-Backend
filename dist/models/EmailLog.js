@@ -5,7 +5,7 @@ const mongoose_1 = require("mongoose");
 const emailLogSchema = new mongoose_1.Schema({
     emailType: {
         type: String,
-        enum: ['REGISTRATION_OTP', 'SUPERVISOR_SITE_ASSIGNMENT', 'SITE_FINAL_REPORT', 'PASSWORD_RESET'],
+        enum: ['REGISTRATION_OTP', 'SUPERVISOR_SITE_ASSIGNMENT', 'SITE_FINAL_REPORT', 'PASSWORD_RESET', 'DAILY_SITE_SUMMARY'],
         required: true,
         index: true
     },

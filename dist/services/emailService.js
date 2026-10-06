@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendPasswordResetEmail = exports.sendSiteFinalReportEmail = exports.sendSupervisorAssignmentEmail = exports.sendRegistrationOtpEmail = exports.sendBrevoEmail = void 0;
+exports.sendDailySiteReportEmail = exports.sendPasswordResetEmail = exports.sendSiteFinalReportEmail = exports.sendSupervisorAssignmentEmail = exports.sendRegistrationOtpEmail = exports.sendBrevoEmail = void 0;
 const axios_1 = __importDefault(require("axios"));
 const env_1 = require("../config/env");
 const EmailLog_1 = require("../models/EmailLog");
@@ -433,3 +433,114 @@ const sendPasswordResetEmail = async (params) => {
     });
 };
 exports.sendPasswordResetEmail = sendPasswordResetEmail;
+/**
+ * Sends a Daily Site Activity Report to the site Owner with today's newly added items.
+ */
+const sendDailySiteReportEmail = async (params) => {
+    const appName = env_1.config.companyName || 'R&D CONSTRUCTIONS';
+    const subject = `📅 Daily Site Summary Report: ${params.siteName} (${params.dateStr})`;
+    const itemRowsHtml = params.todayExpenses.map((item, idx) => `
+    <tr style="border-bottom: 1px solid #e2e8f0; ${idx % 2 === 1 ? 'background-color: #f8fafc;' : ''}">
+      <td style="padding: 10px; font-weight: 700; color: #1e293b;">${item.itemName}</td>
+      <td style="padding: 10px; color: #64748b; font-size: 12px;">${item.category}</td>
+      <td style="padding: 10px; text-align: center; color: #d97706; font-weight: 700;">${item.quantity} ${item.unit}</td>
+      <td style="padding: 10px; text-align: right; color: #475569;">₹${item.rate.toLocaleString('en-IN')}</td>
+      <td style="padding: 10px; text-align: right; font-weight: 800; color: #16a34a;">₹${item.amount.toLocaleString('en-IN')}</td>
+      <td style="padding: 10px; color: #2563eb; font-size: 12px;">${item.addedBy}</td>
+    </tr>
+  `).join('');
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; }
+        .container { max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .header { background-color: #0f172a; padding: 24px; text-align: center; color: #ffffff; border-bottom: 4px solid #f59e0b; }
+        .header h1 { margin: 0; font-size: 22px; color: #f59e0b; letter-spacing: 0.5px; }
+        .header p { margin: 6px 0 0 0; font-size: 13px; color: #94a3b8; }
+        .body { padding: 24px; }
+        .banner { background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+        .banner-title { color: #b45309; font-weight: 800; font-size: 14px; margin-bottom: 4px; }
+        .stats-grid { display: flex; gap: 12px; margin-bottom: 20px; }
+        .stat-box { flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
+        .stat-label { font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+        .stat-val { font-size: 18px; font-weight: 900; color: #0f172a; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+        th { background-color: #1e293b; color: #ffffff; padding: 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .footer { background-color: #f8fafc; padding: 16px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>${appName}</h1>
+          <p>📅 Daily Site Activity & Expense Report</p>
+        </div>
+        <div class="body">
+          <p>Hello <strong>${params.ownerName}</strong>,</p>
+          <div class="banner">
+            <div class="banner-title">🏗️ SITE: ${params.siteName}</div>
+            <div style="font-size: 12px; color: #78350f;">Date: <strong>${params.dateStr}</strong> | Daily items activity summary report.</div>
+          </div>
+
+          <div style="display: table; width: 100%; margin-bottom: 16px;">
+            <div style="display: table-cell; width: 50%; padding-right: 6px;">
+              <div class="stat-box">
+                <div class="stat-label">ITEMS ADDED TODAY</div>
+                <div class="stat-val" style="color: #2563eb;">${params.todayExpenses.length} Items</div>
+              </div>
+            </div>
+            <div style="display: table-cell; width: 50%; padding-left: 6px;">
+              <div class="stat-box">
+                <div class="stat-label">TOTAL COST ADDED TODAY</div>
+                <div class="stat-val" style="color: #16a34a;">₹${params.totalAmountToday.toLocaleString('en-IN')}</div>
+              </div>
+            </div>
+          </div>
+
+          <h3 style="font-size: 14px; color: #0f172a; margin-top: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px;">
+            📋 Detailed Breakdown of Items Added Today:
+          </h3>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Item Name</th>
+                <th>Category</th>
+                <th style="text-align: center;">Qty</th>
+                <th style="text-align: right;">Rate</th>
+                <th style="text-align: right;">Total</th>
+                <th>Added By</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRowsHtml}
+            </tbody>
+          </table>
+        </div>
+        <div class="footer">
+          Notice: This automated report was sent because items were recorded on this site today.<br>
+          &copy; ${new Date().getFullYear()} ${appName}. All rights reserved.
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+    return (0, exports.sendBrevoEmail)({
+        toEmail: params.ownerEmail,
+        toName: params.ownerName,
+        subject,
+        htmlContent,
+        emailType: 'DAILY_SITE_SUMMARY',
+        userId: params.userId,
+        siteId: params.siteId,
+        metadata: {
+            dateStr: params.dateStr,
+            itemCount: params.todayExpenses.length,
+            totalAmountToday: params.totalAmountToday
+        }
+    });
+};
+exports.sendDailySiteReportEmail = sendDailySiteReportEmail;

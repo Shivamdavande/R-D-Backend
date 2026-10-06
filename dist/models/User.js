@@ -13,7 +13,7 @@ const userSchema = new mongoose_1.Schema({
     phone: { type: String, trim: true },
     role: {
         type: String,
-        enum: ['OWNER', 'SUPERVISOR', 'VIEWER'],
+        enum: ['OWNER', 'SUPERVISOR', 'SUPERWISER', 'VIEWER'],
         default: 'SUPERVISOR'
     },
     companyName: { type: String, default: 'R&D CONSTRUCTIONS' },

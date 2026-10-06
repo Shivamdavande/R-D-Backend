@@ -5,6 +5,7 @@ const siteController_1 = require("../controllers/siteController");
 const expenseController_1 = require("../controllers/expenseController");
 const summaryController_1 = require("../controllers/summaryController");
 const activityController_1 = require("../controllers/activityController");
+const reportController_1 = require("../controllers/reportController");
 const auth_1 = require("../middleware/auth");
 const role_1 = require("../middleware/role");
 const siteAuth_1 = require("../middleware/siteAuth");
@@ -15,9 +16,10 @@ router.use(auth_1.authenticate);
 // List & Create Sites
 router.get('/', siteController_1.getSites);
 router.post('/', (0, role_1.requireRole)('OWNER'), siteController_1.createSite);
-// Single Site Details, Update
+// Single Site Details, Update, Delete (Owner Only)
 router.get('/:id', siteAuth_1.requireSiteAccess, siteController_1.getSiteById);
 router.put('/:id', siteAuth_1.requireSiteAccess, siteAuth_1.requireSiteOwner, siteController_1.updateSite);
+router.delete('/:id', siteAuth_1.requireSiteAccess, siteAuth_1.requireSiteOwner, siteController_1.deleteSite);
 // Collaborators
 router.get('/:id/members', siteAuth_1.requireSiteAccess, siteController_1.getSiteMembers);
 router.post('/:id/members', siteAuth_1.requireSiteAccess, siteAuth_1.requireSiteOwner, siteController_1.addCollaborator);
@@ -38,4 +40,6 @@ router.get('/:id/summary', siteAuth_1.requireSiteAccess, summaryController_1.get
 router.get('/:id/item-summary', siteAuth_1.requireSiteAccess, summaryController_1.getItemWiseSummary);
 router.get('/:id/measurement-book', siteAuth_1.requireSiteAccess, summaryController_1.getMeasurementBook);
 router.get('/:id/activity', siteAuth_1.requireSiteAccess, activityController_1.getSiteActivityLog);
+router.post('/:id/daily-report', siteAuth_1.requireSiteAccess, reportController_1.sendDailySiteReport);
+router.post('/daily-report', reportController_1.sendDailySiteReport);
 exports.default = router;

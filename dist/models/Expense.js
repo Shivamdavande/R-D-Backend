@@ -25,6 +25,8 @@ const expenseSchema = new mongoose_1.Schema({
     syncStatus: { type: String, enum: ['SYNCED', 'PENDING'], default: 'SYNCED' },
     isDeleted: { type: Boolean, default: false, index: true }
 }, { timestamps: true });
+// Compound index for ultra-fast aggregation per site
+expenseSchema.index({ siteId: 1, isDeleted: 1 });
 // Middleware to calculate amount automatically before saving
 expenseSchema.pre('save', function (next) {
     if (this.quantity !== undefined && this.rate !== undefined) {

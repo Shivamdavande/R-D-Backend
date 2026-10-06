@@ -9,4 +9,7 @@ router.use(auth_1.authenticate);
 router.get('/site/:id/pdf', siteAuth_1.requireSiteAccess, reportController_1.exportSitePDF);
 router.get('/site/:id/excel', siteAuth_1.requireSiteAccess, reportController_1.exportSiteCSV);
 router.get('/site/:id/csv', siteAuth_1.requireSiteAccess, reportController_1.exportSiteCSV);
+router.post('/site/:id/daily-report', siteAuth_1.requireSiteAccess, reportController_1.sendDailySiteReport);
+router.post('/daily-report', reportController_1.sendDailySiteReport);
+router.post('/daily-batch', reportController_1.triggerAllDailySiteReports);
 exports.default = router;

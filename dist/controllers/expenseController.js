@@ -160,6 +160,14 @@ const getExpenseById = async (req, res) => {
     }
 };
 exports.getExpenseById = getExpenseById;
+const getCreatorIdString = (createdByField) => {
+    if (!createdByField)
+        return '';
+    if (typeof createdByField === 'object' && createdByField._id) {
+        return createdByField._id.toString();
+    }
+    return createdByField.toString();
+};
 const updateExpense = async (req, res) => {
     try {
         const { id } = req.params;
@@ -167,11 +175,12 @@ const updateExpense = async (req, res) => {
         if (!expense || expense.isDeleted) {
             return res.status(404).json({ success: false, message: 'Expense not found.' });
         }
-        // Permission check for Supervisor: supervisors can edit their own entries
-        if (req.user.role !== 'OWNER' && expense.createdBy.toString() !== req.user._id.toString()) {
+        const userRole = (req.user?.role || '').toUpperCase();
+        // Permission check: OWNER, SUPERVISOR, or SUPERWISER can edit expenses
+        if (userRole !== 'OWNER' && userRole !== 'SUPERVISOR' && userRole !== 'SUPERWISER') {
             return res.status(403).json({
                 success: false,
-                message: 'You can only edit expenses that you created.'
+                message: 'Only an Owner or Supervisor can edit expenses.'
             });
         }
         const previousValues = {
@@ -200,7 +209,19 @@ const updateExpense = async (req, res) => {
         if (billImageUrl !== undefined)
             expense.billImageUrl = billImageUrl;
         if (req.file) {
-            expense.billImageUrl = `/uploads/${req.file.filename}`;
+            try {
+                const fileBuffer = req.file.buffer || (req.file.path ? require('fs').readFileSync(req.file.path) : null);
+                if (fileBuffer) {
+                    const ikRes = await (0, imageKitService_1.uploadToImageKit)(fileBuffer, req.file.originalname || `bill_${Date.now()}.jpg`, `/sites/${expense.siteId}/bills`);
+                    expense.billImageUrl = ikRes.url;
+                }
+                else {
+                    expense.billImageUrl = `/uploads/${req.file.filename}`;
+                }
+            }
+            catch (ikErr) {
+                expense.billImageUrl = `/uploads/${req.file.filename}`;
+            }
         }
         if (quantity !== undefined || rate !== undefined) {
             if (quantity !== undefined)
@@ -246,11 +267,12 @@ const deleteExpense = async (req, res) => {
         if (!expense || expense.isDeleted) {
             return res.status(404).json({ success: false, message: 'Expense not found.' });
         }
-        // Only OWNER or creator can delete
-        if (req.user.role !== 'OWNER' && expense.createdBy.toString() !== req.user._id.toString()) {
+        const userRole = (req.user?.role || '').toUpperCase();
+        // Permission check for deleting item: OWNER, SUPERVISOR, or SUPERWISER can delete
+        if (userRole !== 'OWNER' && userRole !== 'SUPERVISOR' && userRole !== 'SUPERWISER') {
             return res.status(403).json({
                 success: false,
-                message: 'Only the Owner or creator can delete an expense entry.'
+                message: 'Only the Owner or Supervisor can delete an expense entry.'
             });
         }
         expense.isDeleted = true;
@@ -261,7 +283,7 @@ const deleteExpense = async (req, res) => {
             userId: req.user._id,
             userName: req.user.name,
             action: 'EXPENSE_DELETED',
-            details: `${req.user.name} deleted expense: ${expense.quantity} ${expense.unit} ${expense.itemName} (₹${expense.amount.toLocaleString()})`,
+            details: `${req.user.name} (${userRole}) deleted item expense: ${expense.quantity} ${expense.unit} ${expense.itemName} (₹${expense.amount.toLocaleString()})`,
             expenseId: expense._id,
             previousValues: {
                 itemName: expense.itemName,
