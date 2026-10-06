@@ -18,7 +18,7 @@ import { sendDailySiteReport } from '../controllers/reportController';
 import { authenticate } from '../middleware/auth';
 import { requireRole } from '../middleware/role';
 import { requireSiteAccess, requireSiteOwner, requireActiveSite } from '../middleware/siteAuth';
-import { upload } from '../middleware/upload';
+import { upload, uploadDocument } from '../middleware/upload';
 
 import {
   getSiteImages,
@@ -26,6 +26,7 @@ import {
   deleteSiteImage,
   getSiteImagesPDF
 } from '../controllers/siteImageController';
+import { uploadSiteBill, getSiteBills, deleteSiteBill } from '../controllers/siteBillController';
 
 const router = Router();
 
@@ -58,6 +59,11 @@ router.get('/:id/images', requireSiteAccess, getSiteImages);
 router.post('/:id/images', requireSiteAccess, requireActiveSite, upload.single('image'), uploadSiteImage);
 router.delete('/:id/images/:imageId', requireSiteAccess, requireActiveSite, deleteSiteImage);
 router.get('/:id/images/pdf', requireSiteAccess, getSiteImagesPDF);
+
+// Site Excel Bills Sub-resource
+router.get('/:id/bills', requireSiteAccess, getSiteBills);
+router.post('/:id/bills', requireSiteAccess, requireSiteOwner, uploadDocument.single('billFile'), uploadSiteBill);
+router.delete('/:id/bills/:billId', requireSiteAccess, requireSiteOwner, deleteSiteBill);
 
 // Site Summaries & Aggregations
 router.get('/:id/summary', requireSiteAccess, getSiteSummary);
