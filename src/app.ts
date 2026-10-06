@@ -37,8 +37,16 @@ app.use(
   })
 );
 
+// Normalize duplicate /api/api prefixes
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/api/')) {
+    req.url = req.url.replace('/api/api/', '/api/');
+  }
+  next();
+});
+
 // Root & Health check
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   res.status(200).json({
     status: 'OK',
     app: 'R&D CONSTRUCTIONS Contractor Backend',
@@ -46,7 +54,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// API Routes
+// Primary API Routes (/api/*)
 app.use('/api/auth', authRoutes);
 app.use('/api/sites', siteRoutes);
 app.use('/api/expenses', expenseRoutes);
@@ -54,6 +62,23 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
+
+// Fallback API Routes without /api prefix (for backwards compatibility)
+app.use('/auth', authRoutes);
+app.use('/sites', siteRoutes);
+app.use('/expenses', expenseRoutes);
+app.use('/reports', reportRoutes);
+app.use('/sync', syncRoutes);
+app.use('/users', userRoutes);
+app.use('/settings', settingsRoutes);
+
+// JSON 404 Handler (prevents default Express HTML error pages)
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `API endpoint not found: ${req.method} ${req.originalUrl}`
+  });
+});
 
 // Error Handler
 app.use(errorHandler);
